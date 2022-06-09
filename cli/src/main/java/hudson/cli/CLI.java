@@ -454,6 +454,7 @@ public class CLI {
 
         @Override
         protected void onStdout(byte[] chunk) throws IOException {
+            System.out.println("hahaha");
             System.out.write(chunk);
         }
 
