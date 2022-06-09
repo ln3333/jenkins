@@ -74,3 +74,7 @@ Jenkins is **licensed** under the **[MIT License]**.
 [Mirrors]: http://mirrors.jenkins-ci.org
 [GitHub]: https://github.com/jenkinsci/jenkins
 [website]: https://www.jenkins.io/
+
+# Notes
+
+[IntelliJ Setup for Jenkins Core Development](https://www.jenkins.io/doc/developer/building/intellij/)
