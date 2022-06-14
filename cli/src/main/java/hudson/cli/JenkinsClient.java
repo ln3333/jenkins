@@ -24,7 +24,7 @@ public class JenkinsClient {
         args.add("build");
         args.add(jb.getJobName());
 
-        jb.getParams().forEach((k, v)->{
+        jb.getParams().forEach((k, v) -> {
             args.add("-p");
             args.add(k + "=" + v);
         });

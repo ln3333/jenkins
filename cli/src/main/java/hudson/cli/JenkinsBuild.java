@@ -45,7 +45,7 @@ public class JenkinsBuild {
 
     public String getOutput() {
         StringBuilder sb = new StringBuilder();
-        for(byte[] chunk: outputBuffer) {
+        for (byte[] chunk : outputBuffer) {
             String s = new String(chunk, StandardCharsets.UTF_8);
             sb.append(s);
         }

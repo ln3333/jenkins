@@ -394,7 +394,7 @@ public class CLI {
         }
     }
 
-    private static int plainHttpConnectionHelper(ClientSideImpl connection, List<String> args, FullDuplexHttpStream streams) throws IOException, InterruptedException{
+    private static int plainHttpConnectionHelper(ClientSideImpl connection, List<String> args, FullDuplexHttpStream streams) throws IOException, InterruptedException {
         connection.start(args);
         InputStream is = streams.getInputStream();
         if (is.read() != 0) { // cf. FullDuplexHttpService
@@ -472,7 +472,7 @@ public class CLI {
 
         @Override
         protected void onStdout(byte[] chunk) throws IOException {
-            if(ob == null) {
+            if (ob == null) {
                 System.out.write(chunk);
             } else {
                 ob.add(chunk);
@@ -481,7 +481,7 @@ public class CLI {
 
         @Override
         protected void onStderr(byte[] chunk) throws IOException {
-            if(ob == null) {
+            if (ob == null) {
                 System.err.write(chunk);
             } else {
                 ob.add(chunk);
