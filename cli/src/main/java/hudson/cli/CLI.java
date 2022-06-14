@@ -382,39 +382,57 @@ public class CLI {
         LOGGER.log(FINE, "Trying to connect to {0} via plain protocol over HTTP", url);
         FullDuplexHttpStream streams = new FullDuplexHttpStream(new URL(url), "cli?remoting=false", factory.authorization);
         try (ClientSideImpl connection = new ClientSideImpl(new PlainCLIProtocol.FramedOutput(streams.getOutputStream()))) {
-            connection.start(args);
-            InputStream is = streams.getInputStream();
-            if (is.read() != 0) { // cf. FullDuplexHttpService
-                throw new IOException("expected to see initial zero byte; perhaps you are connecting to an old server which does not support -http?");
-            }
-            new PlainCLIProtocol.FramedReader(connection, is).start();
-            new Thread("ping") { // JENKINS-46659
-                @Override
-                public void run() {
-                    try {
-                        Thread.sleep(PING_INTERVAL);
-                        while (!connection.complete) {
-                            LOGGER.fine("sending ping");
-                            connection.sendEncoding(Charset.defaultCharset().name()); // no-op at this point
-                            Thread.sleep(PING_INTERVAL);
-                        }
-                    } catch (IOException | InterruptedException x) {
-                        LOGGER.log(Level.WARNING, null, x);
-                    }
-                }
-
-            }.start();
-            return connection.exit();
+            return plainHttpConnectionHelper(connection, args, streams);
         }
+    }
+
+    public static int plainHttpConnection(String url, List<String> args, CLIConnectionFactory factory, List<byte[]> ob) throws IOException, InterruptedException {
+        LOGGER.log(FINE, "Trying to connect to {0} via plain protocol over HTTP", url);
+        FullDuplexHttpStream streams = new FullDuplexHttpStream(new URL(url), "cli?remoting=false", factory.authorization);
+        try (ClientSideImpl connection = new ClientSideImpl(new PlainCLIProtocol.FramedOutput(streams.getOutputStream()), ob)) {
+            return plainHttpConnectionHelper(connection, args, streams);
+        }
+    }
+
+    private static int plainHttpConnectionHelper(ClientSideImpl connection, List<String> args, FullDuplexHttpStream streams) throws IOException, InterruptedException{
+        connection.start(args);
+        InputStream is = streams.getInputStream();
+        if (is.read() != 0) { // cf. FullDuplexHttpService
+            throw new IOException("expected to see initial zero byte; perhaps you are connecting to an old server which does not support -http?");
+        }
+        new PlainCLIProtocol.FramedReader(connection, is).start();
+        new Thread("ping") { // JENKINS-46659
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(PING_INTERVAL);
+                    while (!connection.complete) {
+                        LOGGER.fine("sending ping");
+                        connection.sendEncoding(Charset.defaultCharset().name()); // no-op at this point
+                        Thread.sleep(PING_INTERVAL);
+                    }
+                } catch (IOException | InterruptedException x) {
+                    LOGGER.log(Level.WARNING, null, x);
+                }
+            }
+
+        }.start();
+        return connection.exit();
     }
 
     private static final class ClientSideImpl extends PlainCLIProtocol.ClientSide {
 
         volatile boolean complete;
         private int exit = -1;
+        private List<byte[]> ob;
 
         ClientSideImpl(PlainCLIProtocol.Output out) {
             super(out);
+        }
+
+        ClientSideImpl(PlainCLIProtocol.Output out, List<byte[]> ob) {
+            super(out);
+            this.ob = ob;
         }
 
         void start(List<String> args) throws IOException {
@@ -454,13 +472,20 @@ public class CLI {
 
         @Override
         protected void onStdout(byte[] chunk) throws IOException {
-            System.out.println("hahaha");
-            System.out.write(chunk);
+            if(ob == null) {
+                System.out.write(chunk);
+            } else {
+                ob.add(chunk);
+            }
         }
 
         @Override
         protected void onStderr(byte[] chunk) throws IOException {
-            System.err.write(chunk);
+            if(ob == null) {
+                System.err.write(chunk);
+            } else {
+                ob.add(chunk);
+            }
         }
 
         @Override
@@ -479,7 +504,6 @@ public class CLI {
             }
             return exit;
         }
-
     }
 
     private static String computeVersion() {
